@@ -1,3 +1,117 @@
+// тольк работающая gpu
+// #include <stdio.h>
+// #include <bits/stdc++.h>
+// #include <stdlib.h>
+// #include <time.h>
+
+// using namespace std;
+
+// __global__ void vector_add(int *a, int *b, int *res, int vectrs_size) {
+//   int i = blockIdx.x * blockDim.x + threadIdx.x ;
+//   if (i < vectrs_size) res[i] = a[i] + b[i];
+// }
+
+// vector<int> a;
+// vector<int> b;
+// vector<int> res;
+// size_t size_vectors;
+
+
+// void init_after_change_size() {
+//   a.resize(size_vectors);
+//   b.resize(size_vectors);
+//   res.resize(size_vectors);
+// }
+
+// void init_before_change_method(size_t &a_sum, size_t &b_sum) {
+//   a_sum = 0;
+//   b_sum = 0;
+
+//   for (size_t i = 0; i < size_vectors; ++i) {
+//     a[i] = rand() % 100;
+//     b[i] = rand() % 100;
+//     a_sum += a[i];
+//     b_sum += b[i];
+//   }
+// }
+
+
+// int main(void) {
+//   srand(time(NULL));
+//   size_vectors = 1000;
+
+//   size_t a_sum = 0;
+//   size_t b_sum = 0;
+
+//   cudaEvent_t start, stop;
+//   cudaEventCreate(&start);
+//   cudaEventCreate(&stop);
+
+//   init_after_change_size();
+//   init_before_change_method(a_sum, b_sum);
+
+//   int *d_a, *d_b, *d_res;
+//   size_t vector_byte_size = size_vectors * sizeof(int);
+//   cudaMalloc(&d_a, vector_byte_size);
+//   cudaMalloc(&d_b, vector_byte_size);
+//   cudaMalloc(&d_res, vector_byte_size);
+
+//   cudaMemcpy(d_a, a.data(), vector_byte_size, cudaMemcpyHostToDevice);
+//   cudaMemcpy(d_b, b.data(), vector_byte_size, cudaMemcpyHostToDevice);
+
+//   int threadsInBlock = 256;
+//   int blocksCount = (size_vectors + threadsInBlock - 1) / threadsInBlock;
+
+//   cudaEventRecord(start);
+//   vector_add<<< blocksCount, threadsInBlock >>>(d_a, d_b, d_res, size_vectors);
+//   cudaEventRecord(stop);
+//   cudaEventSynchronize(stop);
+
+//   float time_ms;
+//   cudaEventElapsedTime(&time_ms, start, stop);
+//   float time_ns = time_ms * 1000000.0f; 
+
+//   cudaMemcpy(res.data(), d_res, vector_byte_size, cudaMemcpyDeviceToHost);
+
+
+//   bool ok = true;
+//   int proba_size = 10;
+//   for (int i = 0; i < proba_size; i++) {
+//     if (res[i] != a[i] + b[i]) {
+//         ok = false;
+//         break;
+//     }
+//   }
+
+//   int center = size_vectors / 2 - 1;
+//   for (int i = center; i < center + proba_size; i++) {
+//     if (res[i] != a[i] + b[i]) {
+//         ok = false;
+//         break;
+//     }
+//   }
+  
+//   int end = size_vectors - 1;
+//   for (int i = end; i > end - proba_size; --i) {
+//     if (res[i] != a[i] + b[i]) {
+//         ok = false;
+//         break;
+//     }
+//   }
+
+
+//   cudaFree(d_a);
+//   cudaFree(d_b);
+//   cudaFree(d_res);
+
+
+//   cudaEventDestroy(start);
+//   cudaEventDestroy(stop);
+
+//   return 0;
+// }
+
+// вся программа
 #include <bits/stdc++.h>
 
 using namespace std;
@@ -12,14 +126,6 @@ template <typename Func, typename... Args>
 auto measure_time(Func func, Args... args) {
   auto start = high_resolution_clock::now();
 
-<<<<<<< Updated upstream
-  void DoSeq() {
-    transform(a.begin(), a.end(), b.begin(), res.begin(),
-              [](int a, int b) { return a + b; });
-  }
-
-  void DoParallel() {}
-=======
   auto res = (func)((args)...);
 
   auto end = high_resolution_clock::now();
@@ -63,7 +169,6 @@ long long add_parc() {
   for (size_t i = 0; i < num_threads; ++i) {
     threads.emplace_back(worker, i);
   }
->>>>>>> Stashed changes
 
   for (auto &t : threads) {
     t.join();
@@ -94,14 +199,6 @@ void init_before_change_method(size_t &a_sum, size_t &b_sum) {
   }
 }
 
-<<<<<<< Updated upstream
-  bool check() {
-    res_checksum = accumulate(res.begin(), res.end(), 0);
-
-    if (res_checksum == a_checksum + b_checksum)
-      return true;
-    return false;
-=======
 __global__ void vector_add(int *a, int *b, int *res, int vectrs_size) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < vectrs_size)
@@ -153,7 +250,6 @@ auto add_parg() { // этот код работает, просто не то р
       ok = false;
       break;
     }
->>>>>>> Stashed changes
   }
 
   int end = size_vectors - 1;
@@ -181,37 +277,13 @@ void print_line(char ch, int n) {
   printf("\n");
 }
 
-<<<<<<< Updated upstream
-int main(void) {
-  // size_t max_n_for_tests = 10000000;
-  // size_t opt_ls = 80;
-  // srand(time(NULL));
-
-  // for (size_t n = 1000; n <= max_n_for_tests; n *= 10) {
-  //   VectorAddition va(n);
-
-  //   auto start = high_resolution_clock::now();
-  //   va.DoSeq();
-  //   auto end = high_resolution_clock::now();
-  //   auto duration = duration_cast<nanoseconds>(end - start);
-
-  //   print_line('=', opt_ls);
-  //   cout << "Checksum is correct: " << (va.check() ? "YES" : "NO") << '\n';
-  //   cout << "Execution time (nanoseconds): " << duration.count() << '\n';
-  //   va.show_first(10);
-  // }
-  // print_line('=', opt_ls);
-
-  int num_threads = thread::hardware_concurrency();
-  cout << "Количество доступных потоков на устройстве: " << num_threads << '\n';
-=======
 int main() {
   srand(time(NULL));
 
   size_t a_sum = 0;
   size_t b_sum = 0;
 
-  printf("%-21s %-12s %-20s %-15s %-22s %-15s %-15s\n", "Размер", "Время(пос)",
+  printf("%-15s %-12s %-12s %-15s %-15s %-15s %-15s\n", "Размер", "Время(пос)",
          "Рез(пос)", "Время(пар cpu)", "Рез(пар cpu)", "Время(пар gpu)",
          "Рез(пар gpu)");
   print_line('=', 100);
@@ -229,12 +301,11 @@ int main() {
 
     auto [parg_time, parg_ok] = add_parg();
 
-    printf("%-15lld %-12lld %-12s %-15lld %-15s %-15.0f %-15s\n", size_vectors,
+    printf("%-15zu %-12lld %-12s %-15lld %-15s %-15.0f %-15s\n", size_vectors,
            seq_time, (seq_ok ? "OK" : "FAIL"), parc_time,
            (parc_ok ? "OK" : "FAIL"), parg_time, (parg_ok ? "OK" : "FAIL"));
   }
   print_line('=', 100);
->>>>>>> Stashed changes
 
   return 0;
 }
