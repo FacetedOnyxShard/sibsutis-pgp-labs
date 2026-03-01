@@ -6,20 +6,12 @@ using namespace chrono;
 vector<int> a;
 vector<int> b;
 vector<int> res;
-size_t size_vectors;
+constexpr size_t SIZE_VECTORS = 1 << 20;
 
 template <typename Func, typename... Args>
 auto measure_time(Func func, Args... args) {
   auto start = high_resolution_clock::now();
 
-<<<<<<< Updated upstream
-  void DoSeq() {
-    transform(a.begin(), a.end(), b.begin(), res.begin(),
-              [](int a, int b) { return a + b; });
-  }
-
-  void DoParallel() {}
-=======
   auto res = (func)((args)...);
 
   auto end = high_resolution_clock::now();
@@ -31,7 +23,7 @@ auto measure_time(Func func, Args... args) {
 long long add_seq() {
   long long sum = 0;
 
-  for (size_t i = 0; i < size_vectors; ++i) {
+  for (size_t i = 0; i < SIZE_VECTORS; ++i) {
     res[i] = a[i] + b[i];
     sum += res[i];
   }
@@ -47,10 +39,10 @@ long long add_parc() {
 
   auto worker = [&](size_t thread_id) {
     long long local_sum = 0;
-    size_t start = thread_id * (size_vectors / num_threads);
+    size_t start = thread_id * (SIZE_VECTORS / num_threads);
     size_t end = (thread_id == num_threads - 1)
-                     ? size_vectors
-                     : (thread_id + 1) * (size_vectors / num_threads);
+                     ? SIZE_VECTORS
+                     : (thread_id + 1) * (SIZE_VECTORS / num_threads);
 
     for (size_t i = start; i < end; ++i) {
       res[i] = a[i] + b[i];
@@ -63,7 +55,6 @@ long long add_parc() {
   for (size_t i = 0; i < num_threads; ++i) {
     threads.emplace_back(worker, i);
   }
->>>>>>> Stashed changes
 
   for (auto &t : threads) {
     t.join();
@@ -77,16 +68,16 @@ long long add_parc() {
 }
 
 void init_after_change_size() {
-  a.resize(size_vectors);
-  b.resize(size_vectors);
-  res.resize(size_vectors);
+  a.resize(SIZE_VECTORS);
+  b.resize(SIZE_VECTORS);
+  res.resize(SIZE_VECTORS);
 }
 
 void init_before_change_method(size_t &a_sum, size_t &b_sum) {
   a_sum = 0;
   b_sum = 0;
 
-  for (size_t i = 0; i < size_vectors; ++i) {
+  for (size_t i = 0; i < SIZE_VECTORS; ++i) {
     a[i] = rand() % 100;
     b[i] = rand() % 100;
     a_sum += a[i];
@@ -94,21 +85,14 @@ void init_before_change_method(size_t &a_sum, size_t &b_sum) {
   }
 }
 
-<<<<<<< Updated upstream
-  bool check() {
-    res_checksum = accumulate(res.begin(), res.end(), 0);
-
-    if (res_checksum == a_checksum + b_checksum)
-      return true;
-    return false;
-=======
 __global__ void vector_add(int *a, int *b, int *res, int vectrs_size) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < vectrs_size)
     res[i] = a[i] + b[i];
 }
 
-auto add_parg() { // этот код работает, просто не то расширение
+auto add_parg(
+    int threadsInBlock = 256) { // этот код работает, просто не то расширение
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
@@ -116,7 +100,7 @@ auto add_parg() { // этот код работает, просто не то р
   init_after_change_size();
 
   int *d_a, *d_b, *d_res;
-  size_t vector_byte_size = size_vectors * sizeof(int);
+  size_t vector_byte_size = SIZE_VECTORS * sizeof(int);
   cudaMalloc(&d_a, vector_byte_size);
   cudaMalloc(&d_b, vector_byte_size);
   cudaMalloc(&d_res, vector_byte_size);
@@ -124,11 +108,10 @@ auto add_parg() { // этот код работает, просто не то р
   cudaMemcpy(d_a, a.data(), vector_byte_size, cudaMemcpyHostToDevice);
   cudaMemcpy(d_b, b.data(), vector_byte_size, cudaMemcpyHostToDevice);
 
-  int threadsInBlock = 256;
-  int blocksCount = (size_vectors + threadsInBlock - 1) / threadsInBlock;
+  int blocksCount = (SIZE_VECTORS + threadsInBlock - 1) / threadsInBlock;
 
   cudaEventRecord(start);
-  vector_add<<<blocksCount, threadsInBlock>>>(d_a, d_b, d_res, size_vectors);
+  vector_add<<<blocksCount, threadsInBlock>>>(d_a, d_b, d_res, SIZE_VECTORS);
   cudaEventRecord(stop);
   cudaEventSynchronize(stop);
 
@@ -147,16 +130,15 @@ auto add_parg() { // этот код работает, просто не то р
     }
   }
 
-  int center = size_vectors / 2 - 1;
+  int center = SIZE_VECTORS / 2 - 1;
   for (int i = center; i < center + proba_size; i++) {
     if (res[i] != a[i] + b[i]) {
       ok = false;
       break;
     }
->>>>>>> Stashed changes
   }
 
-  int end = size_vectors - 1;
+  int end = SIZE_VECTORS - 1;
   for (int i = end; i > end - proba_size; --i) {
     if (res[i] != a[i] + b[i]) {
       ok = false;
@@ -181,60 +163,20 @@ void print_line(char ch, int n) {
   printf("\n");
 }
 
-<<<<<<< Updated upstream
-int main(void) {
-  // size_t max_n_for_tests = 10000000;
-  // size_t opt_ls = 80;
-  // srand(time(NULL));
-
-  // for (size_t n = 1000; n <= max_n_for_tests; n *= 10) {
-  //   VectorAddition va(n);
-
-  //   auto start = high_resolution_clock::now();
-  //   va.DoSeq();
-  //   auto end = high_resolution_clock::now();
-  //   auto duration = duration_cast<nanoseconds>(end - start);
-
-  //   print_line('=', opt_ls);
-  //   cout << "Checksum is correct: " << (va.check() ? "YES" : "NO") << '\n';
-  //   cout << "Execution time (nanoseconds): " << duration.count() << '\n';
-  //   va.show_first(10);
-  // }
-  // print_line('=', opt_ls);
-
-  int num_threads = thread::hardware_concurrency();
-  cout << "Количество доступных потоков на устройстве: " << num_threads << '\n';
-=======
 int main() {
   srand(time(NULL));
 
-  size_t a_sum = 0;
-  size_t b_sum = 0;
+  printf("%-35s %-35s %-20s\n", "Количество нитей", "Время выполнения",
+         "Результат корректен?");
 
-  printf("%-21s %-12s %-20s %-15s %-22s %-15s %-15s\n", "Размер", "Время(пос)",
-         "Рез(пос)", "Время(пар cpu)", "Рез(пар cpu)", "Время(пар gpu)",
-         "Рез(пар gpu)");
-  print_line('=', 100);
+  for (int threadsInBlock = 1; threadsInBlock <= 1024; threadsInBlock <<= 1) {
+    if (threadsInBlock != 1 && threadsInBlock < 16)
+      continue;
 
-  for (size_vectors = 1000; size_vectors <= 10000000; size_vectors *= 100) {
-    init_after_change_size();
-    init_before_change_method(a_sum, b_sum);
-
-    auto [seq_time, seq_res] = measure_time(add_seq);
-    bool seq_ok = ((long long)(a_sum + b_sum) == seq_res);
-
-    init_before_change_method(a_sum, b_sum);
-    auto [parc_time, parc_res] = measure_time(add_parc);
-    bool parc_ok = ((long long)(a_sum + b_sum) == parc_res);
-
-    auto [parg_time, parg_ok] = add_parg();
-
-    printf("%-15lld %-12lld %-12s %-15lld %-15s %-15.0f %-15s\n", size_vectors,
-           seq_time, (seq_ok ? "OK" : "FAIL"), parc_time,
-           (parc_ok ? "OK" : "FAIL"), parg_time, (parg_ok ? "OK" : "FAIL"));
+    auto [time_ns, ok] = add_parg(threadsInBlock);
+    printf("%-20d %-20f %-20s\n", threadsInBlock, time_ns, (ok ? "YES" : "NO"));
   }
-  print_line('=', 100);
->>>>>>> Stashed changes
+  cout << '\n';
 
   return 0;
 }
