@@ -45,3 +45,7 @@ build/
 
 test.c
 *.zip
+.cache/
+
+CMakeLists.txt
+main.cpp
