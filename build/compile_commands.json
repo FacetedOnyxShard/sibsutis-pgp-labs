@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/home/hikaruvi/univer/3_course/sibsutis-pgp-labs/build",
-  "command": "/usr/bin/c++ -o CMakeFiles/main.dir/main.cpp.o -c /home/hikaruvi/univer/3_course/sibsutis-pgp-labs/main.cpp",
-  "file": "/home/hikaruvi/univer/3_course/sibsutis-pgp-labs/main.cpp",
-  "output": "/home/hikaruvi/univer/3_course/sibsutis-pgp-labs/build/CMakeFiles/main.dir/main.cpp.o"
-}
-]

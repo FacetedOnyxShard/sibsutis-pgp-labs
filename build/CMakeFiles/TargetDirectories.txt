@@ -1,3 +1,0 @@
-/home/hikaruvi/univer/3_course/sibsutis-pgp-labs/build/CMakeFiles/main.dir
-/home/hikaruvi/univer/3_course/sibsutis-pgp-labs/build/CMakeFiles/edit_cache.dir
-/home/hikaruvi/univer/3_course/sibsutis-pgp-labs/build/CMakeFiles/rebuild_cache.dir

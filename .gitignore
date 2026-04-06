@@ -42,6 +42,6 @@
 
 test.c
 *.zip
-.cache
+.cache/
 build/
 .vscode/
