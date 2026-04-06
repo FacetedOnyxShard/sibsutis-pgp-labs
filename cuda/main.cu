@@ -1,182 +1,66 @@
-#include <bits/stdc++.h>
+#include <cuda_runtime.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
-using namespace std;
-using namespace chrono;
+constexpr int N 1024
+constexpr int BLOCK_SIZE 16
 
-vector<int> a;
-vector<int> b;
-vector<int> res;
-constexpr size_t SIZE_VECTORS = 1 << 20;
+__global__ void matmul_kernel(float *A, float *B, float *C, int N) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-template <typename Func, typename... Args>
-auto measure_time(Func func, Args... args) {
-  auto start = high_resolution_clock::now();
-
-  auto res = (func)((args)...);
-
-  auto end = high_resolution_clock::now();
-  auto dur = duration_cast<nanoseconds>(end - start);
-
-  return make_pair(dur.count(), res);
-}
-
-long long add_seq() {
-  long long sum = 0;
-
-  for (size_t i = 0; i < SIZE_VECTORS; ++i) {
-    res[i] = a[i] + b[i];
-    sum += res[i];
-  }
-
-  return sum;
-}
-
-long long add_parc() {
-  long long total_sum = 0;
-  const size_t num_threads = thread::hardware_concurrency();
-  vector<thread> threads;
-  vector<long long> partial_sums(num_threads, 0);
-
-  auto worker = [&](size_t thread_id) {
-    long long local_sum = 0;
-    size_t start = thread_id * (SIZE_VECTORS / num_threads);
-    size_t end = (thread_id == num_threads - 1)
-                     ? SIZE_VECTORS
-                     : (thread_id + 1) * (SIZE_VECTORS / num_threads);
-
-    for (size_t i = start; i < end; ++i) {
-      res[i] = a[i] + b[i];
-      local_sum += res[i];
+    if (row < N && col < N) {
+        float sum = 0.0f;
+        for (int k = 0; k < N; ++k) {
+            sum += A[row * N + k] * B[k * N + col];
+        }
+        C[row * N + col] = sum;
     }
-
-    partial_sums[thread_id] = local_sum;
-  };
-
-  for (size_t i = 0; i < num_threads; ++i) {
-    threads.emplace_back(worker, i);
-  }
-
-  for (auto &t : threads) {
-    t.join();
-  }
-
-  for (auto &partial : partial_sums) {
-    total_sum += partial;
-  }
-
-  return total_sum;
-}
-
-void init_after_change_size() {
-  a.resize(SIZE_VECTORS);
-  b.resize(SIZE_VECTORS);
-  res.resize(SIZE_VECTORS);
-}
-
-void init_before_change_method(size_t &a_sum, size_t &b_sum) {
-  a_sum = 0;
-  b_sum = 0;
-
-  for (size_t i = 0; i < SIZE_VECTORS; ++i) {
-    a[i] = rand() % 100;
-    b[i] = rand() % 100;
-    a_sum += a[i];
-    b_sum += b[i];
-  }
-}
-
-__global__ void vector_add(int *a, int *b, int *res, int vectrs_size) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < vectrs_size)
-    res[i] = a[i] + b[i];
-}
-
-auto add_parg(
-    int threadsInBlock = 256) { // этот код работает, просто не то расширение
-  cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-
-  init_after_change_size();
-
-  int *d_a, *d_b, *d_res;
-  size_t vector_byte_size = SIZE_VECTORS * sizeof(int);
-  cudaMalloc(&d_a, vector_byte_size);
-  cudaMalloc(&d_b, vector_byte_size);
-  cudaMalloc(&d_res, vector_byte_size);
-
-  cudaMemcpy(d_a, a.data(), vector_byte_size, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_b, b.data(), vector_byte_size, cudaMemcpyHostToDevice);
-
-  int blocksCount = (SIZE_VECTORS + threadsInBlock - 1) / threadsInBlock;
-
-  cudaEventRecord(start);
-  vector_add<<<blocksCount, threadsInBlock>>>(d_a, d_b, d_res, SIZE_VECTORS);
-  cudaEventRecord(stop);
-  cudaEventSynchronize(stop);
-
-  float time_ms;
-  cudaEventElapsedTime(&time_ms, start, stop);
-  float time_ns = time_ms * 1000000.0f;
-
-  cudaMemcpy(res.data(), d_res, vector_byte_size, cudaMemcpyDeviceToHost);
-
-  bool ok = true;
-  int proba_size = 10;
-  for (int i = 0; i < proba_size; i++) {
-    if (res[i] != a[i] + b[i]) {
-      ok = false;
-      break;
-    }
-  }
-
-  int center = SIZE_VECTORS / 2 - 1;
-  for (int i = center; i < center + proba_size; i++) {
-    if (res[i] != a[i] + b[i]) {
-      ok = false;
-      break;
-    }
-  }
-
-  int end = SIZE_VECTORS - 1;
-  for (int i = end; i > end - proba_size; --i) {
-    if (res[i] != a[i] + b[i]) {
-      ok = false;
-      break;
-    }
-  }
-
-  cudaFree(d_a);
-  cudaFree(d_b);
-  cudaFree(d_res);
-
-  cudaEventDestroy(start);
-  cudaEventDestroy(stop);
-
-  return make_pair(time_ns, ok);
-}
-
-void print_line(char ch, int n) {
-  for (int i = 0; i < n; ++i)
-    printf("%c", ch);
-
-  printf("\n");
 }
 
 int main() {
-  srand(time(NULL));
+    size_t matrix_size = N * N;
+    size_t mat_size_in_mem = matrix_size * sizeof(float);
+    float *h_A = (float*)malloc(mat_size_in_mem);
+    float *h_B = (float*)malloc(mat_size_in_mem);
+    float *h_C = (float*)malloc(mat_size_in_mem);
 
-  printf("%-35s %-35s %-20s\n", "Количество нитей", "Время выполнения",
-         "Результат корректен?");
+    // Инициализация матриц
+    for (int i = 0; i < matrix_size; ++i) {
+        h_A[i] = rand() / (float)RAND_MAX;
+        h_B[i] = rand() / (float)RAND_MAX;
+    }
 
-  for (int threadsInBlock = 1; threadsInBlock <= 1024; threadsInBlock <<= 1) {
-    if (threadsInBlock != 1 && threadsInBlock < 16)
-      continue;
+    float *d_A, *d_B, *d_C;
+    cudaMalloc(&d_A, mat_size_in_mem);
+    cudaMalloc(&d_B, mat_size_in_mem);
+    cudaMalloc(&d_C, mat_size_in_mem);
 
-    auto [time_ns, ok] = add_parg(threadsInBlock);
-    printf("%-20d %-20.0f %-20s\n", threadsInBlock, time_ns, (ok ? "YES" : "NO"));
-  }
-  cout << '\n';
+    cudaMemcpy(d_A, h_A, mat_size_in_mem, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, h_B, mat_size_in_mem, cudaMemcpyHostToDevice);
 
-  return 0;
+    dim3 block(BLOCK_SIZE, BLOCK_SIZE);
+    dim3 grid((N + BLOCK_SIZE - 1) / BLOCK_SIZE, 
+              (N + BLOCK_SIZE - 1) / BLOCK_SIZE);
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaEventRecord(start);
+    matmul_kernel<<<grid, block>>>(d_A, d_B, d_C, N);
+    cudaEventRecord(stop);
+
+    cudaEventSynchronize(stop);
+
+    float elapsed_ms;
+    cudaEventElapsedTime(&elapsed_ms, start, stop);
+    printf("Runtime API time: %f ms\n", elapsed_ms);
+
+    cudaMemcpy(h_C, d_C, mat_size_in_mem, cudaMemcpyDeviceToHost);
+
+    cudaFree(d_A); cudaFree(d_B); cudaFree(d_C);
+    free(h_A); free(h_B); free(h_C);
+    return 0;
 }

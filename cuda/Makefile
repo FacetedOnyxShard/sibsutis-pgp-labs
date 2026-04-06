@@ -5,12 +5,18 @@ SRCS = main.cu
 
 TARGET = program
 
-.PHONY: all clean
+.PHONY: all run clean
 
 all: $(TARGET)
+
+run:
+	./$(TARGET)
 
 $(TARGET): $(SRCS)
 	$(CC) $(CFLAGS) $(SRCS) -o $@
 
 clean:
 	rm -rf $(TARGET)
+
+
+nvcc -arch=sm_75 
