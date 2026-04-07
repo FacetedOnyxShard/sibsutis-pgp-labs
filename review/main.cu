@@ -148,6 +148,7 @@ void bench(size_t bytes, const string &name,
                           cudaMemcpyDeviceToHost, streams[i]);
         }
       }
+      cudaDeviceSynchronize();
 
       cudaEventRecord(stop);
       cudaEventSynchronize(stop);
