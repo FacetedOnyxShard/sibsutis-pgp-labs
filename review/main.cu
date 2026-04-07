@@ -5,7 +5,7 @@
 
 using namespace std;
 
-constexpr int N = (1 << 20) * 10; // 10Mb стандарт для измерений
+constexpr int N = (1 << 20) * 10; // 10М стандарт для измерений
 constexpr int BLOCK_SIZE = 256;
 constexpr int ITER = 5;
 
