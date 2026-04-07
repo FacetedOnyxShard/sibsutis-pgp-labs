@@ -46,3 +46,5 @@ test.c
 .cache/
 build/
 .vscode/
+venv/
+*.txt
