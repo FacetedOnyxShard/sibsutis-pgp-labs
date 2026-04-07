@@ -71,6 +71,7 @@ void copy_test(size_t bytes, bool use_pinned = false) {
   cout << left << setw(20) << (use_pinned ? "Pinned" : "Regular") << setw(20)
        << h2d_ms << setw(20) << d2h_ms << endl;
 
+  // cleanup
   if (use_pinned)
     cudaFreeHost(host_data);
   else
@@ -105,7 +106,7 @@ void bench(size_t bytes, const string &name,
   }
 
   cout << "\n" << name << "\n";
-  cout << left << setw(20) << "Streams" << setw(20) << "Chunk" << "Time (ms)\n";
+  cout << setw(20) << "Streams" << setw(20) << "Chunk" << "Time (ms)\n";
 
   for (int s : {1, 2, 4, 8, 16}) {
     vector<cudaStream_t> streams(s);
@@ -185,8 +186,7 @@ int main() {
   
   cout << "Copy performance (ms)\n";
   cout << left << setw(20) << "Type" << setw(20) << "H->D" << setw(20)
-       << "D->H\n";
-  cout << "\n";
+       << "D->H" << endl;
 
   copy_test(bytes);
   copy_test(bytes, true);
